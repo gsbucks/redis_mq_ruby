@@ -1,8 +1,9 @@
 module RedisMQ
   class RPCServer
-    def initialize(dispatcher, server)
+    def initialize(dispatcher, server, result_expiry: 5)
       @server = server
       @dispatcher = dispatcher
+      @result_expiry = result_expiry
     end
 
     def process(*args)
@@ -23,10 +24,11 @@ module RedisMQ
     def handle_rpc_request(request)
       rpc_request = RPC.unpackage_request(request)
       result = dispatcher.send(*[rpc_request.method, rpc_request.params].compact)
-      @server.redis.lpush(
-        "#{@server.queue}-result-#{rpc_request.id}",
-        RPC.package_result(rpc_request.id, result)
-      )
+      server.redis.multi do |trans|
+        result_list = "#{@server.queue}-result-#{rpc_request.id}"
+        trans.lpush(result_list, RPC.package_result(rpc_request.id, result))
+        trans.expire(result_list, @result_expiry)
+      end
       true
     end
 

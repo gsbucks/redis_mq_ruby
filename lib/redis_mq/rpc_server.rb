@@ -24,9 +24,16 @@ module RedisMQ
     def handle_rpc_request(request)
       rpc_request = RPC.unpackage_request(request)
       result = dispatcher.send(*[rpc_request.method, rpc_request.params].compact)
+    rescue Exception => e
+      respond(rpc_request.id, RPC.package_error(rpc_request.id, e))
+    else
+      respond(rpc_request.id, RPC.package_result(rpc_request.id, result))
+    end
+
+    def respond(id, rpc_object)
+      result_list = "#{server.queue}-result-#{id}"
       server.redis.multi do |trans|
-        result_list = "#{@server.queue}-result-#{rpc_request.id}"
-        trans.lpush(result_list, RPC.package_result(rpc_request.id, result))
+        trans.lpush(result_list, rpc_object)
         trans.expire(result_list, @result_expiry)
       end
       true

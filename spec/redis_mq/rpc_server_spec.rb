@@ -46,6 +46,20 @@ module RedisMQ
           )
         end
       end
+
+      context 'an error occurs during dispatch' do
+        before { @redis.lpush(queue, rpc_package.to_json) }
+
+        it 'pushes a JSON-RPC error object onto the response list' do
+          expect(dispatcher).to(
+            receive(rpc_package[:method]).with(rpc_package[:params]).and_raise(ArgumentError)
+          )
+          rpc_server.process_one
+          expect(@redis.lpop("#{queue}-result-#{rpc_package[:id]}")).to(
+            match(/"error"/)
+          )
+        end
+      end
     end
 
     describe '#process' do

@@ -1,6 +1,17 @@
 require 'spec_helper'
 
 describe RedisMQ::RPC do
+  describe '::package_error' do
+    let(:id) { 'anything' }
+    subject { described_class.package_error(id, Exception.new('some message')) }
+    it { is_expected.to match([
+           /{"jsonrpc":"2\.0"/,
+           /"id":"#{id}"/,
+           /"error":{"code":1,"message":"some message","data":/
+         ].join(',') )
+    }
+  end
+
   describe '::package_request' do
     subject { described_class.package_request(method, params) }
 

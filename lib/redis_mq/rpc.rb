@@ -41,8 +41,16 @@ module RedisMQ
         }.to_json
       end
 
-      def package_error(id, error_message)
-        raise 'not implemented'
+      def package_error(id, exception)
+        {
+          jsonrpc: '2.0',
+          id: id,
+          error: {
+            code: 1,
+            message: exception.message,
+            data: exception.backtrace
+          }
+        }.to_json
       end
 
       def unpackage_result(response)

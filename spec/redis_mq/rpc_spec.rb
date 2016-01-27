@@ -29,7 +29,7 @@ describe RedisMQ::RPC do
         id: 'blahblah1234'
       }.to_json }
 
-      it { is_expected.to eq(['meth', nil]) }
+      it { is_expected.to eq(['meth']) }
     end
 
     context 'request with params' do

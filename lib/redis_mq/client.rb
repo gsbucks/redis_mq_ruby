@@ -9,7 +9,7 @@ module RedisMQ
     def rpc(method, params)
       id, package = RPC.package(method, params)
       broadcast(package)
-      RPC.unpackage(redis.blpop("#{queue}-#{id}", @timeout))
+      RPC.unpackage_result(redis.blpop("#{queue}-#{id}", @timeout))
     end
 
     def broadcast(object)

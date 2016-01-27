@@ -26,8 +26,6 @@ result = client.rpc('kick', ['Ball', 'Can'])
 client.broadcast( { bro: 'hope you can handle this' }.to_json )
 
 ### Server ###
-# Define a dispatcher to handle the RPC requests
-dispatcher = RequestHandler.new
 server = RedisMQ::Server.new(queue: 'QueueName', redis: $redis)
 
 # Blocking, will monitor queue until killed
@@ -54,9 +52,9 @@ dispatcher = RequestHandler.new
 server = RedisMQ::Server.new(queue: 'QueueName', redis: $redis)
 rpc_server = RedisMQ::RPCServer.new(dispatcher, server)
 
-# Same methods as RedisMQ::Server, but instead of blocks request are sent to dispatcher
+# Same methods as RedisMQ::Server, but instead of giving a block, the requests are sent to dispatcher
 # For example...
-client = RedisMQ::Client.new(queue: 'Test')
+client = RedisMQ::Client.new(queue: 'QueueName')
 client.rpc('print', 'stuff')
 
 rpc_server.process_one

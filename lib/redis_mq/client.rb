@@ -1,4 +1,6 @@
 module RedisMQ
+  class RPCResponseTimeout < Exception; end
+
   class Client
     def initialize(queue:, redis: Redis.new, timeout: 0)
       @redis = redis
@@ -10,6 +12,7 @@ module RedisMQ
       id, package = RPC.package_request(method, params)
       broadcast(package)
       from_queue, result = redis.blpop("#{queue}-result-#{id}", @timeout)
+      raise RPCResponseTimeout if from_queue.nil?
       RPC.unpackage_result(result)
     end
 

@@ -1,4 +1,4 @@
-redis_mq
+RedisMQ
 =============
 Based on reliable queue pattern: http://redis.io/commands/rpoplpush
 
@@ -10,6 +10,26 @@ Eventually I'd like it to include an executable that can easily be called on a b
 Installation
 ----------------
     $ not yet
+
+Usage
+----------------
+```ruby
+
+### Client ###
+client = RedisMQ::Client.new(queue: 'QueueName', redis: $redis)
+
+# Send request through JSON-RPC and wait for result
+result = client.rpc('kick', ['Ball', 'Can'])
+
+# Send a message and don't expect a response. No marshalling done to object, so if your
+# server expects JSON, you should give this JSON
+client.broadcast( { bro: 'hope you can handle this' }.to_json )
+
+
+
+### Server ###
+In progress
+```
 
 Testing
 ----------------

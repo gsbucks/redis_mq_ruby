@@ -7,12 +7,16 @@ module RedisMQ
     RPC_VERSION = '2.0'
 
     def self.package(method, params)
-      {
-        jsonrpc: '2.0',
-        method: method,
-        params: params,
-        id: SecureRandom.hex
-      }.to_json
+      id = SecureRandom.hex
+      [
+        id,
+        {
+          jsonrpc: '2.0',
+          method: method,
+          params: params,
+          id: SecureRandom.hex
+        }.to_json
+      ]
     end
 
     def self.unpackage(response)

@@ -7,8 +7,8 @@ describe RedisMQ::RPC do
     context 'proper method and params objects' do
       let(:method) { 'goats' }
       let(:params) { [1,2] }
-      it {
-        is_expected.to match([
+      it { expect(subject[0]).to match(/[[:alnum:]]{32}/) }
+      it { expect(subject[1]).to match([
           /{"jsonrpc":"2\.0"/,
           /"method":"#{method}"/,
           /"params":#{Regexp.quote(params.to_json)}/,

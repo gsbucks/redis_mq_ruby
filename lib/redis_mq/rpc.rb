@@ -1,29 +1,47 @@
 require 'json'
 
 module RedisMQ
-  class InvalidResponseException < Exception; end
+  class InvalidRPCException < Exception; end
+  class InvalidRequestException < Exception; end
 
   class RPC
     RPC_VERSION = '2.0'
 
-    def self.package(method, params)
-      id = SecureRandom.hex
-      [
-        id,
-        {
-          jsonrpc: '2.0',
-          method: method,
-          params: params,
-          id: SecureRandom.hex
-        }.to_json
-      ]
-    end
+    class << self
+      def package(method, params)
+        id = SecureRandom.hex
+        [
+          id,
+          {
+            jsonrpc: '2.0',
+            method: method,
+            params: params,
+            id: SecureRandom.hex
+          }.to_json
+        ]
+      end
 
-    def self.unpackage(response)
-      rpc = JSON.parse(response)
-      raise InvalidResponseException, response if rpc['jsonrpc'] != RPC_VERSION
-      raise InvalidResponseException, response if rpc['id'].nil? || rpc['id'].empty?
-      rpc.has_key?('result') ? rpc['result'] : rpc['error']
+      def unpackage_request(response)
+        rpc = parse_and_validate(response)
+        if rpc['method'].nil? || rpc['method'].empty?
+          raise InvalidRequestException, "#{response} lacks method"
+        end
+        [rpc['method'], rpc['params']].compact
+      end
+
+      def unpackage_result(response)
+        rpc = parse_and_validate(response)
+        rpc.has_key?('result') ? rpc['result'] : rpc['error']
+      end
+
+      private
+
+      def parse_and_validate(response)
+        rpc = JSON.parse(response)
+        raise InvalidRPCException, "#{response} incorrect version" if rpc['jsonrpc'] != RPC_VERSION
+        raise InvalidRPCException, "#{response} lacks ID" if rpc['id'].nil? || rpc['id'].empty?
+        rpc
+      end
     end
   end
 end

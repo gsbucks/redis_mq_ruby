@@ -18,9 +18,35 @@ describe RedisMQ::RPC do
     end
   end
 
-  describe '::unpackage' do
+  describe '::unpackage_request' do
     let(:result) { 'Stuff!' }
-    subject { described_class.unpackage(response) }
+    subject { described_class.unpackage_request(response) }
+
+    context 'no params' do
+      let(:response) {{
+        jsonrpc: '2.0',
+        method: 'meth',
+        id: 'blahblah1234'
+      }.to_json }
+
+      it { is_expected.to eq(['meth', nil]) }
+    end
+
+    context 'request with params' do
+      let(:response) {{
+        jsonrpc: '2.0',
+        method: 'meth',
+        params: [1],
+        id: 'blahblah1234'
+      }.to_json }
+
+      it { is_expected.to eq(['meth', [1]]) }
+    end
+  end
+
+  describe '::unpackage_result' do
+    let(:result) { 'Stuff!' }
+    subject { described_class.unpackage_result(response) }
 
     context 'valid response' do
       let(:response) {{

@@ -19,9 +19,5 @@ module RedisMQ
     private
 
     attr_accessor :queue, :redis
-
-    def retry_queue
-      @rq ||= "#{@queue}_retry"
-    end
   end
 end

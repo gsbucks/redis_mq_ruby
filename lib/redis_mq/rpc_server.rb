@@ -1,7 +1,7 @@
 module RedisMQ
   class RPCServer
-    def initialize(dispatcher, *args)
-      @server = Server.new(*args)
+    def initialize(dispatcher, server)
+      @server = server
       @dispatcher = dispatcher
     end
 
@@ -21,13 +21,6 @@ module RedisMQ
       request = @server.non_blocking_process_one
       return if request.nil?
       dispatcher.send(*RPC.unpackage_request(request))
-    end
-
-    # Miss ActiveSupport's delegate module
-    [:commit, :retry_queue, :queue].each do |method|
-      define_method method do |*args, &block|
-        @server.send(method, *args, &block)
-      end
     end
 
     private

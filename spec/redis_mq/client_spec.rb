@@ -22,13 +22,16 @@ describe RedisMQ::Client do
 
     it 'pushes to queue and blocks for the result' do
       expect(@redis).to receive(:blpop) { |*args|
-        expect(args[0]).to match(/#{queue}-[[:alnum:]]{32}/)
+        expect(args[0]).to match(/#{queue}-result-[[:alnum:]]{32}/)
         expect(args[1]).to eq(0)
-      }.and_return({
-        jsonrpc: '2.0',
-        id: '123',
-        result: expected_result
-      }.to_json)
+      }.and_return([
+        queue,
+        {
+          jsonrpc: '2.0',
+          id: '123',
+          result: expected_result
+        }.to_json
+      ])
       expect(subject).to eq(expected_result)
     end
   end

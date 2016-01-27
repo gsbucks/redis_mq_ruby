@@ -19,7 +19,7 @@ module RedisMQ
             jsonrpc: '2.0',
             method: method,
             params: params,
-            id: SecureRandom.hex
+            id: id
           }.to_json
         ]
       end

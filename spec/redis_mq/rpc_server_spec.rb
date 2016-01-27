@@ -17,7 +17,7 @@ module RedisMQ
       subject { rpc_server.non_blocking_process_one }
 
       context 'list doesnt exist' do
-        it { is_expected.to be_nil }
+        it { is_expected.to be true }
       end
 
       context 'something in list' do
@@ -31,12 +31,19 @@ module RedisMQ
     end
 
     describe '#process_one' do
+      let(:dispatch_result) { 'Anything' }
+
       context 'element in the queue' do
         before { @redis.lpush(queue, rpc_package.to_json) }
 
-        it 'calls out to dispatcher' do
-          expect(dispatcher).to receive(rpc_package[:method]).with(rpc_package[:params])
+        it 'calls out to dispatcher, placing result on return queue' do
+          expect(dispatcher).to(
+            receive(rpc_package[:method]).with(rpc_package[:params]).and_return(dispatch_result)
+          )
           rpc_server.process_one
+          expect(@redis.lpop("#{queue}-result-#{rpc_package[:id]}")).to(
+            match(/"result":"#{dispatch_result}"/)
+          )
         end
       end
     end
@@ -67,7 +74,7 @@ module RedisMQ
         before { packages.each{|rpc| @redis.lpush(queue, rpc.to_json) } }
         subject { rpc_server.process(packages.length) }
 
-        it 'stops after iteration total, false dispatch left on retry queue' do
+        it 'stops after iteration total' do
           expect(dispatcher).to(
             receive(rpc_package[:method]).once.with(rpc_package[:params]).and_return(true)
           )
@@ -76,8 +83,9 @@ module RedisMQ
           )
           subject
           expect(@redis.llen(server.queue)).to eq(0)
-          expect(@redis.llen(server.retry_queue)).to eq(1)
-          expect(@redis.lpop(server.retry_queue)).to eq(rpc_package_2.to_json)
+          expect(@redis.llen(server.retry_queue)).to eq(0)
+          expect(@redis.llen("#{queue}-result-#{rpc_package[:id]}")).to eq(1)
+          expect(@redis.llen("#{queue}-result-#{rpc_package_2[:id]}")).to eq(1)
         end
       end
     end

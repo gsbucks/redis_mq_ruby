@@ -4,11 +4,14 @@ module RedisMQ
   class InvalidRPCException < Exception; end
   class InvalidRequestException < Exception; end
 
+  class RPCRequest < Struct.new(:id, :method, :params)
+  end
+
   class RPC
     RPC_VERSION = '2.0'
 
     class << self
-      def package(method, params)
+      def package_request(method, params)
         id = SecureRandom.hex
         [
           id,
@@ -26,7 +29,20 @@ module RedisMQ
         if rpc['method'].nil? || rpc['method'].empty?
           raise InvalidRequestException, "#{response} lacks method"
         end
-        [rpc['method'], rpc['params']].compact
+        RPCRequest.new(rpc['id'], rpc['method'], rpc['params'])
+      end
+
+      def package_result(id, result)
+        raise ArgumentError, 'id is required' if id.nil? || id.empty?
+        {
+          jsonrpc: '2.0',
+          result: result,
+          id: id
+        }.to_json
+      end
+
+      def package_error(id, error_message)
+        raise 'not implemented'
       end
 
       def unpackage_result(response)

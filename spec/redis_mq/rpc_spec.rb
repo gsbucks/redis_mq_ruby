@@ -1,8 +1,8 @@
 require 'spec_helper'
 
 describe RedisMQ::RPC do
-  describe '::package' do
-    subject { described_class.package(method, params) }
+  describe '::package_request' do
+    subject { described_class.package_request(method, params) }
 
     context 'proper method and params objects' do
       let(:method) { 'goats' }
@@ -29,7 +29,9 @@ describe RedisMQ::RPC do
         id: 'blahblah1234'
       }.to_json }
 
-      it { is_expected.to eq(['meth']) }
+      it { expect(subject.method).to eq('meth') }
+      it { expect(subject.id).to eq('blahblah1234') }
+      it { expect(subject.params).to be_nil }
     end
 
     context 'request with params' do
@@ -40,7 +42,27 @@ describe RedisMQ::RPC do
         id: 'blahblah1234'
       }.to_json }
 
-      it { is_expected.to eq(['meth', [1]]) }
+      it { expect(subject.params).to eq([1]) }
+    end
+  end
+
+  describe '::package_result' do
+    let(:id)     { '123' }
+    let(:result) { 'Stuff!' }
+    let(:response) {{
+      jsonrpc: '2.0',
+      result: result,
+      id: id
+    }}
+    subject { described_class.package_result(id, result) }
+
+    context 'missing ID' do
+      let(:id) { '' }
+      it { expect{ subject }.to raise_error ArgumentError }
+    end
+
+    context 'valid args' do
+      it { is_expected.to eq(response.to_json) }
     end
   end
 

@@ -1,8 +1,9 @@
 RedisMQ
 =============
 Based on reliable queue pattern: http://redis.io/commands/rpoplpush
+A good post about how this can be used: http://blog.carbonfive.com/2014/04/28/micromessaging-connecting-heroku-microservices-wredis-and-rabbitmq/
 
-Adds RedisMQ::Server/Client to send arbitrary or JSON-RPC based messages through redis. Supports encrypting transferred packets if you're just using redis for inter-service communication and don't want to set up a tunnel.
+Defines RedisMQ::Server/Client to send arbitrary or JSON-RPC based messages through redis. Supports encrypting transferred packets if you're just using redis for inter-service communication and don't want to set up a tunnel.
 
 Eventually I'd like it to include an executable that can easily be called on a background heroku dyno to serve these requests
 
@@ -59,6 +60,29 @@ client.rpc('print', 'stuff')
 
 rpc_server.process_one
 # Results in 'stuff' being printed by RequestHandler
+
+
+### Encryption ###
+# Automatically encrypts if a RedisMQ::Encryptor is given to client/server.
+
+cipher = OpenSSL::Cipher::AES.new(128, :CBC)
+cipher.encrypt
+key = cipher.random_key
+iv = cipher.random_iv
+
+encryptor = RedisMQ::Encryptor.new(key, iv, 256) #(128 default)
+server = RedisMQ::Server.new(queue: 'QueueName', redis: $redis, encryptor: encryptor)
+client = RedisMQ::Client.new(queue: 'QueueName', redis: $redis, encryptor: encryptor)
+client.broadcast('stuff')
+# 'stuff' gets encrypted before pushing to redis
+server.process { |decrypted_message| #'stuff' }
+
+# All server processing calls not taking a block return the encrypted result
+# because otherwise calling commit would fail. They must be manually decrypted.
+encrypted_still = server.process
+decrypted_message = encryptor.decrypt(encrypted_still)
+server.commit(encrypted_still)
+
 
 ```
 

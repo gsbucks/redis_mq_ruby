@@ -2,10 +2,11 @@ module RedisMQ
   class Server
     attr_accessor :queue, :redis
 
-    def initialize(queue:, redis: Redis.new, timeout: 0)
+    def initialize(queue:, redis: Redis.new, timeout: 0, encryptor: MockEncryptor.new)
       @redis = redis
       @queue = queue
       @timeout = timeout
+      @encryptor = encryptor
     end
 
     def process(count = 0, &block)
@@ -21,7 +22,7 @@ module RedisMQ
     def process_one(&block)
       result = redis.brpoplpush(queue, retry_queue, @timeout)
       if block_given?
-        commit(result) if yield(result)
+        commit(result) if yield(@encryptor.decrypt(result))
       else
         result
       end

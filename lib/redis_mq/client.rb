@@ -2,10 +2,11 @@ module RedisMQ
   class RPCResponseTimeout < Exception; end
 
   class Client
-    def initialize(queue:, redis: Redis.new, timeout: 0)
+    def initialize(queue:, redis: Redis.new, encryptor: MockEncryptor.new, timeout: 0)
       @redis = redis
       @queue = queue
       @timeout = timeout
+      @encryptor = encryptor
     end
 
     def rpc(method, params)
@@ -17,7 +18,7 @@ module RedisMQ
     end
 
     def broadcast(object)
-      redis.lpush(queue, object)
+      redis.lpush(queue, @encryptor.encrypt(object))
     end
 
     private
